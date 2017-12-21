@@ -7,6 +7,41 @@ using System.Text;
 
 namespace Convert
 {
+    public static class CellExtension
+    {
+        public static string SValue(this ICell cell, CellType? FormulaResultType = null)
+        {
+            string svalue = "";
+            var cellType = FormulaResultType ?? cell.CellType;
+            switch(cellType)
+            {
+            case CellType.Unknown:
+                svalue = "nil";
+                break;
+            case CellType.Numeric:
+                svalue = cell.NumericCellValue.ToString();
+                break;
+            case CellType.String:
+                svalue = "\"" + cell.StringCellValue + "\"";
+                break;
+            case CellType.Formula:
+                svalue = cell.SValue(cell.CachedFormulaResultType);
+                break;
+            case CellType.Blank:
+                svalue = "nil";
+                break;
+            case CellType.Boolean:
+                svalue = cell.BooleanCellValue.ToString();
+                break;
+            case CellType.Error:
+                svalue = "nil";
+                break;
+            default:
+                break;
+            }
+            return svalue;
+        }
+    }
     class Program
     {
         public static bool writeLua(string sheetname, ISheet sheet, string path)
@@ -40,55 +75,7 @@ namespace Convert
                     for(int j = 0; j < row.LastCellNum; ++j)
                     {
                         var cell = row.GetCell(j) ?? row.CreateCell(j);
-                        switch(cell.CellType)
-                        {
-                        case CellType.Unknown:
-                            body += "\"\"";
-                            break;
-                        case CellType.Numeric:
-                            body += cell.NumericCellValue;
-                            break;
-                        case CellType.String:
-                            body += "\"" + cell.StringCellValue + "\"";
-                            break;
-                        case CellType.Formula:
-                            switch(cell.CachedFormulaResultType)
-                            {
-                            case CellType.Unknown:
-                                body += "\"Unknown\"";
-                                break;
-                            case CellType.Numeric:
-                                body += cell.NumericCellValue;
-                                break;
-                            case CellType.String:
-                                body += "\"" + cell.StringCellValue + "\"";
-                                break;
-                            case CellType.Blank:
-                                body += "\"\"";
-                                break;
-                            case CellType.Boolean:
-                                body += cell.BooleanCellValue;
-                                break;
-                            case CellType.Error:
-                                body += "\"Error\"";
-                                break;
-                            default:
-                                break;
-                            }
-                            break;
-                        case CellType.Blank:
-                            body += "\"\"";
-                            break;
-                        case CellType.Boolean:
-                            body += cell.BooleanCellValue;
-                            break;
-                        case CellType.Error:
-                            body += "\"Error\"";
-                            break;
-                        default:
-                            break;
-                        }
-                        body += ",\t";
+                        body += cell.SValue() + ",\t";
                     }
                     body += "},";
                 }
@@ -110,7 +97,7 @@ namespace Convert
             strLua += tail;
             strLua += "\nreturn Lua_Table." + sheetname;
 
-            path += "\\" + sheetname + ".lua";
+            path += "/" + sheetname + ".lua";
             UTF8Encoding utf8 = new UTF8Encoding(false);
             StreamWriter sw;
             using(sw = new StreamWriter(path, false, utf8))
@@ -143,9 +130,9 @@ namespace Convert
                 outDir.Create();
             }
 
-            if(new FileInfo(inPath + @"\lastWriteTime").Exists && args.Length == 2)
+            if(new FileInfo(inPath + @"/lastWriteTime").Exists && args.Length == 2)
             {
-                StreamReader reader = new StreamReader(inPath + @"\lastWriteTime");
+                StreamReader reader = new StreamReader(inPath + @"/lastWriteTime");
                 if(reader != null)
                 {
                     string s = reader.ReadLine();
@@ -209,7 +196,7 @@ namespace Convert
                 ++errno;
                 Console.Error.Write("error：" + e.Message);
             }
-            StreamWriter writer = new StreamWriter(inPath + @"\lastWriteTime", false);
+            StreamWriter writer = new StreamWriter(inPath + @"/lastWriteTime", false);
             writer.Write(
                 newWriteTime
             );
