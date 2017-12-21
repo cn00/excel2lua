@@ -160,11 +160,11 @@ namespace Convert
                 int errno = 0;
                 foreach(FileInfo info2 in info.GetFiles("*.xls*"))
                 {
-                    //if(info2.LastWriteTime.ToFileTimeUtc() <= lastWriteTime)
-                    //{
-                    //    Console.WriteLine(info2.LastWriteTime.ToString("yyyy_MM_dd-HH_mm_ss") + " 无需更新【" + info2.Name + "】");
-                    //}
-                    //else
+                    if(info2.LastWriteTime.ToFileTimeUtc() <= lastWriteTime)
+                    {
+                        Console.WriteLine(info2.LastWriteTime.ToString("yyyy_MM_dd-HH_mm_ss") + " 无需更新【" + info2.Name + "】");
+                    }
+                    else
                     {
                         if(info2.LastWriteTime.ToFileTimeUtc() > newWriteTime)
                         {
