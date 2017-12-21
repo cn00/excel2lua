@@ -156,38 +156,36 @@ namespace Convert
                 }
                 Console.WriteLine("上次转换时间：" + DateTime.FromFileTimeUtc(lastWriteTime));
 
-                DirectoryInfo info = new DirectoryInfo(inPath);
+                DirectoryInfo dir = new DirectoryInfo(inPath);
                 int errno = 0;
-                foreach(FileInfo info2 in info.GetFiles("*.xls*"))
+                foreach(FileInfo file in dir.GetFiles("*.xls*"))
                 {
-                    if(info2.LastWriteTime.ToFileTimeUtc() <= lastWriteTime)
+                    if(file.LastWriteTime.ToFileTimeUtc() <= lastWriteTime)
                     {
-                        Console.WriteLine(info2.LastWriteTime.ToString("yyyy_MM_dd-HH_mm_ss") + " 无需更新【" + info2.Name + "】");
+                        Console.WriteLine(file.LastWriteTime.ToString("yyyy_MM_dd-HH_mm_ss") + " 无需更新【" + file.Name + "】");
                     }
                     else
                     {
-                        if(info2.LastWriteTime.ToFileTimeUtc() > newWriteTime)
+                        if(file.LastWriteTime.ToFileTimeUtc() > newWriteTime)
                         {
-                            newWriteTime = info2.LastWriteTime.ToFileTimeUtc();
+                            newWriteTime = file.LastWriteTime.ToFileTimeUtc();
                         }
-                        Console.WriteLine(info2.LastWriteTime.ToString("yyyy_MM_dd-HH_mm_ss") + " 开始转换【" + info2.Name + "】... ");
+                        Console.WriteLine(file.LastWriteTime.ToString("yyyy_MM_dd-HH_mm_ss") + " 开始转换【" + file.Name + "】... ");
 
                         try
                         {
-                            var fstream = new FileStream(info2.FullName, FileMode.Open);
+                            var fstream = new FileStream(file.FullName, FileMode.Open);
                             IWorkbook workbook = null;
-                            if(info2.Name.EndsWith(".xlsx"))
+                            if(file.Name.EndsWith(".xlsx"))
                                 workbook = new XSSFWorkbook(fstream);
                             else
                                 workbook = new HSSFWorkbook(fstream);
 
-                            for(int i = 0; i < 1/*workbook.NumberOfSheets*/; ++i)
+                            for(int i = 0; i < workbook.NumberOfSheets; ++i)
                             {
                                 var sheet = workbook.GetSheetAt(i);
                                 var sheetname = sheet.SheetName;
                                 Console.Write("  " + sheetname);
-
-                                //DataTable ds = ExcelRender.RenderFromExcel(sheet, 1);
 
                                 if(writeLua(sheetname.Replace("$", ""), sheet, outPath))
                                 {
