@@ -22,7 +22,10 @@ namespace Convert
                 svalue = cell.NumericCellValue.ToString();
                 break;
             case CellType.String:
-                svalue = "\"" + cell.StringCellValue + "\"";
+                svalue = "\"" + cell.StringCellValue
+                    .Replace("\n", "\\n")
+                    .Replace("\t", "\\t")
+                    .Replace("\"", "\\\"") + "\"";
                 break;
             case CellType.Formula:
                 svalue = cell.SValue(cell.CachedFormulaResultType);
