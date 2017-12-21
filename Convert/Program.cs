@@ -162,22 +162,22 @@ namespace Convert
 
             DirectoryInfo dir = new DirectoryInfo(inPath);
             int errno = 0;
-            foreach(FileInfo file in dir.GetFiles("*.xls*"))
+            try
             {
-                if(file.LastWriteTime.ToFileTimeUtc() <= lastWriteTime)
+                foreach(FileInfo file in dir.GetFiles("*.xls*"))
                 {
-                    Console.WriteLine(file.LastWriteTime.ToString("yyyy_MM_dd-HH_mm_ss") + " 无需更新【" + file.Name + "】");
-                }
-                else
-                {
-                    if(file.LastWriteTime.ToFileTimeUtc() > newWriteTime)
+                    if(file.LastWriteTime.ToFileTimeUtc() <= lastWriteTime)
                     {
-                        newWriteTime = file.LastWriteTime.ToFileTimeUtc();
+                        Console.WriteLine(file.LastWriteTime.ToString("yyyy_MM_dd-HH_mm_ss") + " 无需更新【" + file.Name + "】");
                     }
-                    Console.WriteLine(file.LastWriteTime.ToString("yyyy_MM_dd-HH_mm_ss") + " 开始转换【" + file.Name + "】... ");
-
-                    try
+                    else
                     {
+                        if(file.LastWriteTime.ToFileTimeUtc() > newWriteTime)
+                        {
+                            newWriteTime = file.LastWriteTime.ToFileTimeUtc();
+                        }
+                        Console.WriteLine(file.LastWriteTime.ToString("yyyy_MM_dd-HH_mm_ss") + " 开始转换【" + file.Name + "】... ");
+
                         var fstream = new FileStream(file.FullName, FileMode.Open);
                         IWorkbook workbook = null;
                         if(file.Name.EndsWith(".xlsx"))
@@ -202,12 +202,13 @@ namespace Convert
                             }
                         }
                     }
-                    catch(Exception e)
-                    {
-                        Console.Error.Write("error：" + e.Message);
-                    }
-                }
-            } // for
+                } // for
+            }
+            catch(Exception e)
+            {
+                ++errno;
+                Console.Error.Write("error：" + e.Message);
+            }
             StreamWriter writer = new StreamWriter(inPath + @"\lastWriteTime", false);
             writer.Write(
                 newWriteTime
