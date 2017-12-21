@@ -122,102 +122,105 @@ namespace Convert
         }
         private static void Main(string[] args)
         {
+            string inPath = "test";
+            string outPath = "out";
             if(args.Length < 2)
             {
-                Console.Write("usage:\n\t Convert.exe excel_输入目录 lua_输出目录\n");
+                Console.Write("usage:\n\t Convert.exe excel_输入目录 lua_输出目录\n请输入:");
+                inPath = Console.ReadLine();
             }
             else
             {
-                string inPath = args[0];
-                string outPath = args[1];
-                long lastWriteTime = 0;
-                long newWriteTime = 0;
+                inPath = args[0];
+                outPath = args[1];
+            }
+            long lastWriteTime = 0;
+            long newWriteTime = 0;
 
-                var outDir = new DirectoryInfo(outPath);
-                if(!outDir.Exists)
+            var outDir = new DirectoryInfo(outPath);
+            if(!outDir.Exists)
+            {
+                outDir.Create();
+            }
+
+            if(new FileInfo(inPath + @"\lastWriteTime").Exists && args.Length == 2)
+            {
+                StreamReader reader = new StreamReader(inPath + @"\lastWriteTime");
+                if(reader != null)
                 {
-                    outDir.Create();
+                    string s = reader.ReadLine();
+                    reader.Close();
+                    //lastWriteTime = DateTime.ParseExact(s, "yyyy_MM_dd-HH_mm_ss", CultureInfo.InvariantCulture);
+                    if(!long.TryParse(s, out lastWriteTime))
+                    {
+                        lastWriteTime = 0;
+                    }
+                    newWriteTime = lastWriteTime;
                 }
+            }
+            Console.WriteLine("上次转换时间：" + DateTime.FromFileTimeUtc(lastWriteTime));
 
-                if(new FileInfo(inPath + @"\lastWriteTime").Exists && args.Length == 2)
+            DirectoryInfo dir = new DirectoryInfo(inPath);
+            int errno = 0;
+            foreach(FileInfo file in dir.GetFiles("*.xls*"))
+            {
+                if(file.LastWriteTime.ToFileTimeUtc() <= lastWriteTime)
                 {
-                    StreamReader reader = new StreamReader(inPath + @"\lastWriteTime");
-                    if(reader != null)
-                    {
-                        string s = reader.ReadLine();
-                        reader.Close();
-                        //lastWriteTime = DateTime.ParseExact(s, "yyyy_MM_dd-HH_mm_ss", CultureInfo.InvariantCulture);
-                        if(!long.TryParse(s, out lastWriteTime))
-                        {
-                            lastWriteTime = 0;
-                        }
-                        newWriteTime = lastWriteTime;
-                    }
-                }
-                Console.WriteLine("上次转换时间：" + DateTime.FromFileTimeUtc(lastWriteTime));
-
-                DirectoryInfo dir = new DirectoryInfo(inPath);
-                int errno = 0;
-                foreach(FileInfo file in dir.GetFiles("*.xls*"))
-                {
-                    if(file.LastWriteTime.ToFileTimeUtc() <= lastWriteTime)
-                    {
-                        Console.WriteLine(file.LastWriteTime.ToString("yyyy_MM_dd-HH_mm_ss") + " 无需更新【" + file.Name + "】");
-                    }
-                    else
-                    {
-                        if(file.LastWriteTime.ToFileTimeUtc() > newWriteTime)
-                        {
-                            newWriteTime = file.LastWriteTime.ToFileTimeUtc();
-                        }
-                        Console.WriteLine(file.LastWriteTime.ToString("yyyy_MM_dd-HH_mm_ss") + " 开始转换【" + file.Name + "】... ");
-
-                        try
-                        {
-                            var fstream = new FileStream(file.FullName, FileMode.Open);
-                            IWorkbook workbook = null;
-                            if(file.Name.EndsWith(".xlsx"))
-                                workbook = new XSSFWorkbook(fstream);
-                            else
-                                workbook = new HSSFWorkbook(fstream);
-
-                            for(int i = 0; i < workbook.NumberOfSheets; ++i)
-                            {
-                                var sheet = workbook.GetSheetAt(i);
-                                var sheetname = sheet.SheetName;
-                                Console.Write("  " + sheetname);
-
-                                if(writeLua(sheetname.Replace("$", ""), sheet, outPath))
-                                {
-                                    Console.Write(" 成功\n");
-                                }
-                                else
-                                {
-                                    Console.Write(" 失败!!!!!!!!!\n");
-                                    ++errno;
-                                }
-                            }
-                        }
-                        catch(Exception e)
-                        {
-                            Console.Error.Write("error：" + e.Message);
-                        }
-                    }
-                } // for
-                StreamWriter writer = new StreamWriter(inPath + @"\lastWriteTime", false);
-                writer.Write(
-                    newWriteTime
-                );
-                writer.Close();
-                if(errno > 0)
-                {
-                    Console.WriteLine("转表 {0} 个错误，按 Enter 退出", errno);
-                    Console.ReadLine();
+                    Console.WriteLine(file.LastWriteTime.ToString("yyyy_MM_dd-HH_mm_ss") + " 无需更新【" + file.Name + "】");
                 }
                 else
                 {
-                    System.Threading.Thread.Sleep(2000);
+                    if(file.LastWriteTime.ToFileTimeUtc() > newWriteTime)
+                    {
+                        newWriteTime = file.LastWriteTime.ToFileTimeUtc();
+                    }
+                    Console.WriteLine(file.LastWriteTime.ToString("yyyy_MM_dd-HH_mm_ss") + " 开始转换【" + file.Name + "】... ");
+
+                    try
+                    {
+                        var fstream = new FileStream(file.FullName, FileMode.Open);
+                        IWorkbook workbook = null;
+                        if(file.Name.EndsWith(".xlsx"))
+                            workbook = new XSSFWorkbook(fstream);
+                        else
+                            workbook = new HSSFWorkbook(fstream);
+
+                        for(int i = 0; i < workbook.NumberOfSheets; ++i)
+                        {
+                            var sheet = workbook.GetSheetAt(i);
+                            var sheetname = sheet.SheetName;
+                            Console.Write("  " + sheetname);
+
+                            if(writeLua(sheetname.Replace("$", ""), sheet, outPath))
+                            {
+                                Console.Write(" 成功\n");
+                            }
+                            else
+                            {
+                                Console.Write(" 失败!!!!!!!!!\n");
+                                ++errno;
+                            }
+                        }
+                    }
+                    catch(Exception e)
+                    {
+                        Console.Error.Write("error：" + e.Message);
+                    }
                 }
+            } // for
+            StreamWriter writer = new StreamWriter(inPath + @"\lastWriteTime", false);
+            writer.Write(
+                newWriteTime
+            );
+            writer.Close();
+            if(errno > 0)
+            {
+                Console.WriteLine("转表 {0} 个错误，按 Enter 退出", errno);
+                Console.ReadLine();
+            }
+            else
+            {
+                System.Threading.Thread.Sleep(2000);
             }
         }
     }
