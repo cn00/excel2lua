@@ -129,14 +129,19 @@ namespace Convert
             string outPath = "out";
             if(args.Length < 2)
             {
-                Console.Write("usage:\n\t Convert.exe excel_输入目录 lua_输出目录\n请输入:");
+                Console.Write("usage:\n\t Convert.exe excel_输入目录 lua_输出目录\n");
+                Console.Write("excel_输入目录:\n");
                 inPath = Console.ReadLine();
+                Console.Write("lua_输出目录:\n");
+                outPath = Console.ReadLine();
             }
             else
             {
                 inPath = args[0];
                 outPath = args[1];
             }
+            Console.WriteLine("{0} => {1}", inPath, outPath);
+
             long lastWriteTime = 0;
             long newWriteTime = 0;
 
